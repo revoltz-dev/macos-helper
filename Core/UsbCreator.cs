@@ -59,15 +59,11 @@ public class UsbCreator
         _log(L("3) Em 'macOS Utilities' clique em 'Reinstalar macOS'.",
                "3) From 'macOS Utilities' click 'Reinstall macOS'."));
         _log("");
-        _log(L("Se aparecer 'O servidor de recuperação não pôde ser contatado':",
-               "If you see 'The recovery server could not be contacted':"));
-        _log(L("   abra Utilitários → Terminal e cole este comando (uma linha):",
-               "   open Utilities → Terminal and paste this command (one line):"));
-        _log("   nvram IASUCatalogURL=\"http://swscan.apple.com/content/catalogs/" +
-             "others/index-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-" +
-             "snowleopard-leopard.merged-1.sucatalog\"");
-        _log(L("   Depois feche o Terminal e clique em 'Reinstalar macOS' de novo.",
-               "   Then close Terminal and click 'Reinstall macOS' again."));
+        _log(L("Se aparecer 'O servidor de recuperação não pôde ser contatado',",
+               "If you see 'The recovery server could not be contacted',"));
+        _log(L("veja como resolver neste vídeo:",
+               "watch the fix in this video:"));
+        _log("https://www.youtube.com/watch?v=w7tHXSohdxU");
     }
 
     private async Task Stage1_FormatDisk(int diskIndex, CancellationToken ct)
