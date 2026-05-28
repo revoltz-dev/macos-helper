@@ -1,79 +1,80 @@
 # macOS Helper
 
-Um aplicativo para Windows que baixa instaladores oficiais do macOS direto da Apple e cria pendrives bootáveis para instalar/reinstalar macOS em um Mac.
+A Windows application that downloads official macOS installers straight from Apple and creates bootable USB drives to install or reinstall macOS on a Mac.
 
-Tudo em uma única janela, em português, sem precisar de Terminal, scripts ou tutoriais de Hackintosh.
-
----
-
-## O que ele faz
-
-- **Detecta seu modelo de Mac** a partir do `Model Identifier` (Sobre Este Mac → Informações do Sistema) e mostra qual é a última versão de macOS compatível com ele.
-- **Baixa o instalador oficial da Apple** — escolhendo de um catálogo completo desde o OS X Lion até o macOS Tahoe (versão mais recente).
-- **Filtra automaticamente** as versões compatíveis com o seu Mac, então você não baixa algo que nem vai instalar.
-- **Cria o pendrive bootável** com um clique. O pendrive funciona direto no Mac: segure ⌥ Option ao ligar e selecione o instalador.
+Everything in a single window — no Terminal, no scripts, no Hackintosh tutorials required.
 
 ---
 
-## Para quem é
+## What it does
 
-- Quem está com um **Mac sem sistema**, com disco apagado ou com macOS quebrado, e precisa reinstalar.
-- Quem só tem um **PC com Windows** à mão e não consegue criar o pendrive pelo método tradicional do Mac.
-- Quem quer **voltar para uma versão antiga** do macOS (downgrade) usando um pendrive feito do zero.
-- Quem quer **testar betas** (público, customer seed ou developer beta).
-
----
-
-## Como usar
-
-1. **Abra** o `MacOSHelper.exe`. Ele pede permissão de administrador — necessário porque grava direto no pendrive.
-2. Clique em **Detectar Mac**, cole a saída do comando do `system_profiler` (ou só o `Model Identifier`) e veja qual macOS é compatível.
-3. Clique em **Catálogo** → **Carregar Catálogo**. Escolha entre Release Público, Beta, Customer Seed ou Developer Beta.
-4. Escolha a versão de macOS que quer e clique em **Baixar**. O download é resumível — se cair, é só retomar.
-5. Conecte o pendrive (mínimo **16 GB**), volte para a tela principal.
-6. Selecione o pendrive no combo **Pendrive**, escolha o **Instalador** baixado e clique em **Criar Pendrive Bootável**.
-7. Confirme. Em alguns minutos o pendrive está pronto. **Tudo no pendrive será apagado.**
+- **Detects your Mac model** from its `Model Identifier` (About This Mac → System Information) and tells you the latest macOS version that's compatible.
+- **Downloads the official installer from Apple** — picking from a full catalog ranging from OS X Lion all the way to macOS Tahoe (the latest).
+- **Automatically filters** versions to those compatible with your Mac, so you don't end up downloading something that won't even install.
+- **Creates the bootable USB** in one click. The drive works directly on the Mac: hold ⌥ Option at startup and pick the installer.
 
 ---
 
-## No Mac
+## Who it's for
 
-1. Ligue o Mac segurando a tecla **⌥ Option (Alt)**.
-2. Selecione o ícone do **instalador macOS** no menu de boot.
-3. Use o **Utilitário de Disco** para apagar e formatar como APFS (ou HFS+ em Macs antigos).
-4. Volte e escolha **Instalar macOS**.
+- People with a **Mac that has no system**, a wiped disk, or a broken macOS install, and need to reinstall.
+- People who only have a **Windows PC** at hand and can't use the traditional Mac method to make a USB.
+- People who want to **roll back to an older macOS** (downgrade) using a freshly built USB.
+- People who want to **try out betas** (Public, Customer Seed, or Developer Beta).
 
-### Se aparecer "O servidor de recuperação não pôde ser contatado"
+---
 
-Esse erro é causado por um bug da Apple no High Sierra (10.13) — eles atualizaram os certificados dos servidores mas o framework de segurança do Recovery não consegue mais validar HTTPS. **Solução simples:** abra **Utilitários → Terminal** e cole este comando (uma linha só):
+## How to use
+
+1. **Open** `MacOSHelper.exe`. It will ask for administrator permission — that's required because it writes directly to the USB drive.
+2. Click **Detect Mac**, paste the output of the `system_profiler` command (or just the `Model Identifier`), and see which macOS version is compatible.
+3. Click **Catalog** → **Load Catalog**. Choose between Public Release, Public Beta, Customer Seed, or Developer Beta.
+4. Pick the macOS version you want and click **Download**. The download is resumable — if it drops, just resume it.
+5. Plug in the USB drive (minimum **16 GB**) and go back to the main screen.
+6. Pick the USB in the **USB Drive** dropdown, pick the downloaded **Installer**, and click **Create Bootable USB**.
+7. Confirm. In a few minutes the USB is ready. **Everything on the USB will be wiped.**
+
+---
+
+## On the Mac
+
+1. Power on the Mac holding the **⌥ Option (Alt)** key.
+2. Pick the **macOS installer** icon from the boot menu.
+3. Use **Disk Utility** to erase and format the disk as APFS (or HFS+ on older Macs).
+4. Go back and choose **Install macOS**.
+
+### If you see "The recovery server could not be contacted"
+
+This error is caused by an Apple bug in High Sierra (10.13) — they updated the server certificates, but the Recovery environment's security framework can no longer validate HTTPS. **Simple fix:** open **Utilities → Terminal** and paste this command (one line):
 
 ```
 nvram IASUCatalogURL="http://swscan.apple.com/content/catalogs/others/index-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
 ```
 
-O truque é trocar `https://` por `http://` (sem o `S`), o que pula a verificação SSL quebrada. Feche o Terminal e clique em **Reinstalar macOS** novamente.
+The trick is swapping `https://` for `http://` (no `S`), which skips the broken SSL check. Close Terminal and click **Reinstall macOS** again.
 
-Para outras versões do macOS o caminho é o mesmo — só ajuste o `10.13` da URL para a versão que estiver instalando (ex: `10.14` para Mojave).
+For other macOS versions the approach is the same — just adjust the `10.13` in the URL to the version you're installing (e.g., `10.14` for Mojave).
 
 ---
 
-## Requisitos
+## Requirements
 
-- **Windows 10 ou 11** (64 bits)
-- **Permissão de administrador** (é solicitada automaticamente)
-- **Pendrive de 16 GB ou mais** (todos os dados serão apagados)
-- Conexão à internet para baixar o instalador (4–14 GB dependendo da versão)
+- **Windows 10 or 11** (64-bit)
+- **Administrator permission** (it's prompted automatically)
+- **USB drive of 16 GB or larger** (all data on it will be wiped)
+- Internet connection to download the installer (4–14 GB depending on the version)
 
 ---
 
 ## Download
 
-Pegue a versão mais recente em **[Releases](../../releases)** — é um único `.exe`, não precisa instalar nada.
+Grab the latest build from **[Releases](../../releases)** — it's a single `.exe`, no installation needed.
 
 ---
 
-## Observações
+## Notes
 
-- O app **não roda no Mac** — ele é exatamente para quem só tem Windows à mão.
-- Suporte completo para gravação de pendrive funciona até o **macOS Catalina (10.15)**. Versões Big Sur+ (11+) podem ser baixadas, mas a gravação no pendrive ainda não é suportada nessa versão. Para Macs Apple Silicon, o boot via pendrive não é suportado pela própria Apple — use o método de Internet Recovery do próprio Mac.
-- Os instaladores ficam salvos numa pasta `Downloads/` ao lado do `.exe`, então você pode reaproveitar sem baixar de novo.
+- The app **does not run on macOS** — it's specifically for when you only have Windows around.
+- Full bootable USB creation works up to **macOS Catalina (10.15)**. Big Sur and newer (11+) can be downloaded, but USB creation isn't supported for those versions yet. For Apple Silicon Macs, booting from a USB installer isn't supported by Apple itself — use the Mac's built-in Internet Recovery instead.
+- Installers are saved in a `Downloads/` folder next to the `.exe`, so you can reuse them without downloading again.
+
