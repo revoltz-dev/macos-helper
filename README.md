@@ -47,15 +47,9 @@ Everything in a single window — no Terminal, no scripts, no Hackintosh tutoria
 
 ### If you see "The recovery server could not be contacted"
 
-This error is caused by an Apple bug in High Sierra (10.13) — they updated the server certificates, but the Recovery environment's security framework can no longer validate HTTPS. **Simple fix:** open **Utilities → Terminal** and paste this command (one line):
+This is a known Apple bug on older recovery environments. Watch the fix here:
 
-```
-nvram IASUCatalogURL="http://swscan.apple.com/content/catalogs/others/index-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog"
-```
-
-The trick is swapping `https://` for `http://` (no `S`), which skips the broken SSL check. Close Terminal and click **Reinstall macOS** again.
-
-For other macOS versions the approach is the same — just adjust the `10.13` in the URL to the version you're installing (e.g., `10.14` for Mojave).
+▶️ **[YouTube tutorial](https://www.youtube.com/watch?v=w7tHXSohdxU)**
 
 ---
 
