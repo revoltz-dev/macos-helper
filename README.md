@@ -4,6 +4,8 @@ A Windows application that downloads official macOS installers straight from App
 
 Everything in a single window — no Terminal, no scripts, no Hackintosh tutorials required.
 
+![macOS Helper screenshot](assets/screenshot.png)
+
 ---
 
 ## What it does
