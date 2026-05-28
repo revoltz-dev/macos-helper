@@ -35,12 +35,12 @@ public sealed class UsbPage
         float comboW = avail.X - lw - 86;
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.75f, 0.75f, 0.75f, 1f));
-        ImGui.Text("Pendrive:");
+        ImGui.Text(T.UsbDriveLabel);
         ImGui.PopStyleColor();
         ImGui.SameLine(lw);
 
         ImGui.SetNextItemWidth(comboW);
-        string drivePrev = _selectedDrive?.DisplayName ?? "(selecione um pendrive)";
+        string drivePrev = _selectedDrive?.DisplayName ?? T.UsbDrivePlaceholder;
         if (ImGui.BeginCombo("##drives", drivePrev))
         {
             for (int i = 0; i < _drives.Count; i++)
@@ -57,7 +57,7 @@ public sealed class UsbPage
             ImGui.EndCombo();
         }
         ImGui.SameLine();
-        if (ImGui.Button("Atualizar##drives", new Vector2(78, 0)))
+        if (ImGui.Button($"{T.Refresh}##drives", new Vector2(78, 0)))
             RefreshDrives();
 
         if (_selectedDrive != null)
@@ -66,21 +66,21 @@ public sealed class UsbPage
                 .Where(p => p.DriveLetter != null)
                 .Select(p => $"{p.DriveLetter} ({p.FileSystem ?? "?"})"));
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.45f, 0.45f, 0.45f, 1f));
-            ImGui.Text($"    Partições: {(string.IsNullOrEmpty(parts) ? "nenhuma" : parts)}");
+            ImGui.Text(T.PartitionsLabel(string.IsNullOrEmpty(parts) ? T.NoPartitions : parts));
             ImGui.PopStyleColor();
         }
 
         ImGui.Spacing();
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.75f, 0.75f, 0.75f, 1f));
-        ImGui.Text("Instalador:");
+        ImGui.Text(T.InstallerLabel);
         ImGui.PopStyleColor();
         ImGui.SameLine(lw);
 
         ImGui.SetNextItemWidth(comboW);
         string prodPrev = _selectedProductIdx >= 0 && _selectedProductIdx < _downloadedProducts.Count
             ? Path.GetFileName(_downloadedProducts[_selectedProductIdx])
-            : "(nenhum instalador baixado)";
+            : T.InstallerPlaceholder;
         if (ImGui.BeginCombo("##products", prodPrev))
         {
             for (int i = 0; i < _downloadedProducts.Count; i++)
@@ -92,13 +92,13 @@ public sealed class UsbPage
             ImGui.EndCombo();
         }
         ImGui.SameLine();
-        if (ImGui.Button("Buscar##prod", new Vector2(78, 0)))
+        if (ImGui.Button($"{T.Search}##prod", new Vector2(78, 0)))
             RefreshProducts();
 
         if (_downloadedProducts.Count == 0)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.85f, 0.75f, 0.20f, 1f));
-            ImGui.Text("    Nenhum instalador baixado. Use Catálogo para baixar um.");
+            ImGui.Text(T.NoInstallerHint);
             ImGui.PopStyleColor();
         }
 
@@ -114,7 +114,7 @@ public sealed class UsbPage
         ImGui.PushStyleColor(ImGuiCol.Button,        new Vector4(0.70f, 0.16f, 0.16f, 1f));
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.85f, 0.20f, 0.20f, 1f));
         ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.55f, 0.12f, 0.12f, 1f));
-        if (ImGui.Button("Criar Pendrive Bootável", new Vector2(200, 32)))
+        if (ImGui.Button(T.CreateBootableUsb, new Vector2(220, 32)))
             _showConfirm = true;
         ImGui.PopStyleColor(3);
         if (!canCreate) ImGui.EndDisabled();
@@ -149,7 +149,7 @@ public sealed class UsbPage
             else
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.85f, 0.20f, 1f));
-                ImGui.Text("  Trabalhando...");
+                ImGui.Text("  " + T.Working);
                 ImGui.PopStyleColor();
             }
         }
@@ -169,24 +169,24 @@ public sealed class UsbPage
             ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
         {
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.35f, 0.35f, 1f));
-            ImGui.Text("ATENÇÃO — ISSO VAI APAGAR TODOS OS DADOS DE:");
+            ImGui.Text(T.ConfirmWipeTitle);
             ImGui.PopStyleColor();
             ImGui.Spacing();
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.85f, 0.20f, 1f));
             ImGui.Text($"  {_selectedDrive?.DisplayName}");
             ImGui.PopStyleColor();
             ImGui.Spacing();
-            ImGui.Text("Continuar?");
+            ImGui.Text(T.ConfirmContinue);
             ImGui.Spacing();
 
             ImGui.PushStyleColor(ImGuiCol.Button,        new Vector4(0.70f, 0.16f, 0.16f, 1f));
             ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.85f, 0.20f, 0.20f, 1f));
-            if (ImGui.Button("Sim, apagar e criar", new Vector2(170, 28)))
+            if (ImGui.Button(T.ConfirmYesErase, new Vector2(190, 28)))
             { ImGui.CloseCurrentPopup(); StartCreation(); }
             ImGui.PopStyleColor(2);
 
             ImGui.SameLine();
-            if (ImGui.Button("Cancelar##conf", new Vector2(90, 28)))
+            if (ImGui.Button($"{T.Cancel}##conf", new Vector2(90, 28)))
                 ImGui.CloseCurrentPopup();
 
             ImGui.EndPopup();

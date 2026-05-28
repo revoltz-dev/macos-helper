@@ -4,6 +4,7 @@ using MacOSHelper.Models;
 
 namespace MacOSHelper.Core;
 
+
 public class Downloader
 {
     private static readonly HttpClient _http = new()
@@ -50,9 +51,9 @@ public class Downloader
                     if (!string.Equals(actual, pkg.Digest, StringComparison.OrdinalIgnoreCase))
                     {
                         entry.Status = DownloadStatus.Failed;
-                        entry.ErrorMessage =
-                            $"SHA1 do arquivo {pkg.FileName} não confere " +
-                            $"(esperado {pkg.Digest}, obtido {actual}).";
+                        entry.ErrorMessage = T.IsEn
+                            ? $"SHA1 mismatch for {pkg.FileName} (expected {pkg.Digest}, got {actual})."
+                            : $"SHA1 do arquivo {pkg.FileName} não confere (esperado {pkg.Digest}, obtido {actual}).";
                         return;
                     }
                 }

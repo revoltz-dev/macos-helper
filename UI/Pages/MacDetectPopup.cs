@@ -24,7 +24,7 @@ public sealed class MacDetectPopup
         app.ShowDetect = open;
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.55f, 0.80f, 1.00f, 1f));
-        ImGui.Text("Detectar Modelo do Mac");
+        ImGui.Text(T.DetectMacTitle);
         ImGui.PopStyleColor();
         ImGui.SameLine(ImGui.GetContentRegionAvail().X + ImGui.GetCursorPosX() - 22);
         if (ImGui.Button("X##det", new System.Numerics.Vector2(22, 22)))
@@ -37,14 +37,14 @@ public sealed class MacDetectPopup
         ImGui.Spacing();
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.75f, 0.75f, 0.75f, 1f));
-        ImGui.TextWrapped("Execute um dos comandos abaixo no Terminal do seu Mac, depois cole o resultado:");
+        ImGui.TextWrapped(T.DetectInstructions);
         ImGui.PopStyleColor();
         ImGui.Spacing();
 
         RenderCmd("sysctl hw.model");
         ImGui.SameLine();
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.50f, 0.50f, 0.50f, 1f));
-        ImGui.Text("  ou  ");
+        ImGui.Text(T.Or);
         ImGui.PopStyleColor();
         ImGui.SameLine();
         RenderCmd("system_profiler SPHardwareDataType | grep 'Model Identifier'");
@@ -54,7 +54,7 @@ public sealed class MacDetectPopup
         ImGui.Spacing();
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.70f, 0.70f, 0.70f, 1f));
-        ImGui.Text("Cole o resultado aqui  (Ctrl+V):");
+        ImGui.Text(T.PasteHere);
         ImGui.PopStyleColor();
 
         var avail = ImGui.GetContentRegionAvail();
@@ -69,7 +69,7 @@ public sealed class MacDetectPopup
         ImGui.PushStyleColor(ImGuiCol.Button,        new Vector4(0.18f, 0.52f, 0.20f, 1f));
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.22f, 0.64f, 0.25f, 1f));
         ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.14f, 0.40f, 0.16f, 1f));
-        if (ImGui.Button("Detectar", new Vector2(100, 28)))
+        if (ImGui.Button(T.Detect, new Vector2(100, 28)))
         {
             _detectAttempted = true;
             _result = MacModelDatabase.Parse(_input);
@@ -88,9 +88,9 @@ public sealed class MacDetectPopup
                 ImGui.BeginChild("##detectcard", new Vector2(avail.X, 80), ImGuiChildFlags.Borders);
 
                 float lw = 140f;
-                LabelValue("Identificador:", m.Identifier,   lw, new Vector4(1f, 1f, 1f, 1f));
-                LabelValue("Modelo:",        m.MarketingName, lw, new Vector4(0.90f, 0.90f, 0.90f, 1f));
-                LabelValue("macOS máximo:",  $"{m.MaxMacOSName} ({m.MaxVersionString})", lw, new Vector4(0.40f, 0.85f, 1f, 1f));
+                LabelValue(T.Identifier, m.Identifier,   lw, new Vector4(1f, 1f, 1f, 1f));
+                LabelValue(T.Model,      m.MarketingName, lw, new Vector4(0.90f, 0.90f, 0.90f, 1f));
+                LabelValue(T.MaxMacOS,   $"{m.MaxMacOSName} ({m.MaxVersionString})", lw, new Vector4(0.40f, 0.85f, 1f, 1f));
 
                 ImGui.EndChild();
                 ImGui.PopStyleColor();
@@ -98,7 +98,7 @@ public sealed class MacDetectPopup
             else if (_detectAttempted)
             {
                 ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.35f, 0.35f, 1f));
-                ImGui.TextWrapped("Modelo não reconhecido. Certifique-se de que o resultado contém algo como  hw.model: MacBookPro10,1");
+                ImGui.TextWrapped(T.ModelNotRecognized);
                 ImGui.PopStyleColor();
             }
         }

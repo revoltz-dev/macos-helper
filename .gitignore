@@ -1,0 +1,21 @@
+# Build output
+bin/
+obj/
+publish/
+
+# IDEs
+.vs/
+.idea/
+.vscode/
+*.user
+*.userosscache
+*.suo
+
+# Runtime
+Downloads/
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+desktop.ini

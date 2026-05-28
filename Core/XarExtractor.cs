@@ -6,6 +6,8 @@ namespace MacOSHelper.Core;
 
 public static class XarExtractor
 {
+    private static string L(string pt, string en) => T.IsEn ? en : pt;
+
     public static async Task<bool> IsXarAsync(string path, CancellationToken ct = default)
     {
         if (!File.Exists(path)) return false;
@@ -34,7 +36,9 @@ public static class XarExtractor
 
         if (hdr[0] != (byte)'x' || hdr[1] != (byte)'a' ||
             hdr[2] != (byte)'r' || hdr[3] != (byte)'!')
-            throw new Exception($"Não é um arquivo XAR (.pkg): {Path.GetFileName(xarPath)}");
+            throw new Exception(L(
+                $"Não é um arquivo XAR (.pkg): {Path.GetFileName(xarPath)}",
+                $"Not a XAR file (.pkg): {Path.GetFileName(xarPath)}"));
 
         int headerSize  = (hdr[4] << 8) | hdr[5];
         long tocCompLen = ReadBE64(hdr, 8);
@@ -56,7 +60,7 @@ public static class XarExtractor
 
         var doc = XDocument.Parse(tocXml);
         var toc = doc.Root?.Element("toc")
-            ?? throw new Exception("XAR: <toc> não encontrado.");
+            ?? throw new Exception(L("XAR: <toc> não encontrado.", "XAR: <toc> not found."));
 
         foreach (var node in toc.Descendants("file"))
         {
@@ -77,8 +81,11 @@ public static class XarExtractor
 
             var destPath = Path.Combine(destDir, Path.GetFileName(name));
             var label    = $"XAR {Path.GetFileName(xarPath)}";
-            log?.Invoke($"[INFO] XAR: extraindo {Path.GetFileName(name)} " +
-                        $"({length / (1024.0*1024):F0} MB, {enc.Replace("application/", "")})");
+            log?.Invoke(L(
+                $"[INFO] XAR: extraindo {Path.GetFileName(name)} " +
+                    $"({length / (1024.0*1024):F0} MB, {enc.Replace("application/", "")})",
+                $"[INFO] XAR: extracting {Path.GetFileName(name)} " +
+                    $"({length / (1024.0*1024):F0} MB, {enc.Replace("application/", "")})"));
 
             using var dest = new FileStream(destPath, FileMode.Create, FileAccess.Write,
                 FileShare.None, 4 * 1024 * 1024, useAsync: true);
@@ -96,7 +103,8 @@ public static class XarExtractor
                     break;
 
                 default:
-                    throw new Exception($"XAR: encoding '{enc}' não suportado.");
+                    throw new Exception(L($"XAR: encoding '{enc}' não suportado.",
+                                           $"XAR: encoding '{enc}' not supported."));
             }
 
             return destPath;
@@ -121,7 +129,7 @@ public static class XarExtractor
         {
             int toRead = (int)Math.Min(buf.Length, remaining);
             int n = await src.ReadAsync(buf.AsMemory(0, toRead), ct);
-            if (n == 0) throw new Exception("XAR: EOF inesperado no heap.");
+            if (n == 0) throw new Exception(L("XAR: EOF inesperado no heap.", "XAR: unexpected EOF in heap."));
             await dest.WriteAsync(buf.AsMemory(0, n), ct);
             remaining -= n;
             written   += n;

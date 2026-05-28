@@ -13,12 +13,9 @@ public sealed class CatalogPopup
 
     private List<MacOsProduct> _products = new();
     private bool               _loading;
-    private string             _status   = "Clique em 'Carregar' para buscar o catálogo da Apple.";
+    private string             _status   = T.CatalogIntro;
     private DownloadEntry?     _activeDownload;
     private readonly object    _lock     = new();
-
-    private CatalogSeed _seed = CatalogSeed.PublicRelease;
-    private readonly string[] _seedLabels = { "Release Público", "Beta Público", "Customer Seed", "Developer Beta" };
 
     private string? _downloadsDir;
     private bool    _initialized;
@@ -47,7 +44,7 @@ public sealed class CatalogPopup
         app.ShowCatalog = open;
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.55f, 0.80f, 1.00f, 1f));
-        ImGui.Text("Catálogo macOS");
+        ImGui.Text(T.CatalogTitle);
         ImGui.PopStyleColor();
         ImGui.SameLine(ImGui.GetContentRegionAvail().X + ImGui.GetCursorPosX() - 22);
         if (ImGui.Button("X##cat", new System.Numerics.Vector2(22, 22)))
@@ -60,19 +57,13 @@ public sealed class CatalogPopup
 
         bool canLoad = !_loading;
         if (!canLoad) ImGui.BeginDisabled();
-        if (ImGui.Button("Carregar Catálogo", new Vector2(140, 26)))
+        if (ImGui.Button(T.LoadCatalog, new Vector2(160, 26)))
             LoadAsync(app);
         if (!canLoad) ImGui.EndDisabled();
 
         ImGui.SameLine();
-        ImGui.SetNextItemWidth(140);
-        int seedIdx = (int)_seed;
-        if (ImGui.Combo("##seed", ref seedIdx, _seedLabels, _seedLabels.Length))
-            _seed = (CatalogSeed)seedIdx;
-
-        ImGui.SameLine();
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.60f, 0.60f, 0.60f, 1f));
-        ImGui.Text(_loading ? "Carregando..." : _status);
+        ImGui.Text(_loading ? T.Loading : _status);
         ImGui.PopStyleColor();
 
         ImGui.Spacing();
@@ -80,13 +71,13 @@ public sealed class CatalogPopup
         if (app.DetectedModel != null)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.40f, 0.85f, 1f, 1f));
-            ImGui.Text($"Filtrado para {app.DetectedModel.Identifier}  (máx {app.DetectedModel.MaxMacOSName})");
+            ImGui.Text(T.FilteredFor(app.DetectedModel.Identifier, app.DetectedModel.MaxMacOSName));
             ImGui.PopStyleColor();
         }
         else
         {
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.85f, 0.75f, 0.20f, 1f));
-            ImGui.Text("Dica: Detecte seu Mac primeiro para filtrar versões compatíveis.");
+            ImGui.Text(T.DetectFirstHint);
             ImGui.PopStyleColor();
         }
 
@@ -102,11 +93,11 @@ public sealed class CatalogPopup
             new Vector2(avail.X, tableH)))
         {
             ImGui.TableSetupScrollFreeze(0, 1);
-            ImGui.TableSetupColumn("Versão",   ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Build",    ImGuiTableColumnFlags.WidthFixed, 80);
-            ImGui.TableSetupColumn("Tamanho",  ImGuiTableColumnFlags.WidthFixed, 80);
-            ImGui.TableSetupColumn("Data",     ImGuiTableColumnFlags.WidthFixed, 82);
-            ImGui.TableSetupColumn("Ação",     ImGuiTableColumnFlags.WidthFixed, 90);
+            ImGui.TableSetupColumn(T.ColVersion, ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableSetupColumn(T.ColBuild,   ImGuiTableColumnFlags.WidthFixed, 80);
+            ImGui.TableSetupColumn(T.ColSize,    ImGuiTableColumnFlags.WidthFixed, 80);
+            ImGui.TableSetupColumn(T.ColDate,    ImGuiTableColumnFlags.WidthFixed, 82);
+            ImGui.TableSetupColumn(T.ColAction,  ImGuiTableColumnFlags.WidthFixed, 90);
             ImGui.TableHeadersRow();
 
             List<MacOsProduct> visible;
@@ -127,7 +118,7 @@ public sealed class CatalogPopup
                 if (isCompleted)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.30f, 0.90f, 0.40f, 1f));
-                    ImGui.Text("Pronto");
+                    ImGui.Text(T.Ready);
                     ImGui.PopStyleColor();
                 }
                 else if (isActive)
@@ -135,7 +126,7 @@ public sealed class CatalogPopup
                     ImGui.PushStyleColor(ImGuiCol.Button,        new Vector4(0.65f, 0.15f, 0.15f, 1f));
                     ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Vector4(0.80f, 0.20f, 0.20f, 1f));
                     ImGui.PushStyleColor(ImGuiCol.ButtonActive,  new Vector4(0.50f, 0.10f, 0.10f, 1f));
-                    if (ImGui.Button($"Cancelar##{p.ProductId}", new Vector2(82, 20)))
+                    if (ImGui.Button($"{T.Cancel}##{p.ProductId}", new Vector2(82, 20)))
                         _activeDownload?.Cts.Cancel();
                     ImGui.PopStyleColor(3);
                 }
@@ -144,7 +135,7 @@ public sealed class CatalogPopup
                     bool busy = _activeDownload != null &&
                                 _activeDownload.Status == DownloadStatus.Downloading;
                     if (busy) ImGui.BeginDisabled();
-                    if (ImGui.Button($"Baixar##{p.ProductId}", new Vector2(82, 20)))
+                    if (ImGui.Button($"{T.Download}##{p.ProductId}", new Vector2(82, 20)))
                         StartDownload(p);
                     if (busy) ImGui.EndDisabled();
                 }
@@ -191,7 +182,7 @@ public sealed class CatalogPopup
     private void LoadAsync(App app)
     {
         _loading = true;
-        _status  = "Carregando...";
+        _status  = T.Loading;
         _products.Clear();
 
         Task.Run(async () =>
@@ -202,16 +193,16 @@ public sealed class CatalogPopup
                 {
                     lock (_lock) _status = msg;
                 });
-                var products = await _catalog.FetchProductsAsync(progress, _seed);
+                var products = await _catalog.FetchProductsAsync(progress);
                 lock (_lock)
                 {
                     _products = products;
-                    _status   = $"Carregado: {products.Count} versões encontradas.";
+                    _status   = T.LoadedCount(products.Count);
                 }
             }
             catch (Exception ex)
             {
-                lock (_lock) _status = $"Erro: {ex.Message}";
+                lock (_lock) _status = T.ErrorFmt(ex.Message);
             }
             finally { _loading = false; }
         });

@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Numerics;
 using ImGuiNET;
+using MacOSHelper.Core;
 
 namespace MacOSHelper.UI.Widgets;
 
@@ -29,11 +30,11 @@ public static class LogWidget
         lock (lockObj) lines = log.ToArray();
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.40f, 0.40f, 0.40f, 1f));
-        ImGui.Text($"{lines.Length} linhas");
+        ImGui.Text(T.LinesCount(lines.Length));
         ImGui.PopStyleColor();
 
         ImGui.SameLine(w - 60f);
-        if (ImGui.SmallButton("Copiar##logcopy") && lines.Length > 0)
+        if (ImGui.SmallButton($"{T.Copy}##logcopy") && lines.Length > 0)
             CopyToClipboard(string.Join("\n", lines));
 
         ImGui.PushStyleColor(ImGuiCol.ChildBg, new Vector4(0.07f, 0.07f, 0.07f, 1f));

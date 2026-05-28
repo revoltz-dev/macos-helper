@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using ImGuiNET;
+using MacOSHelper.Core;
 using MacOSHelper.Models;
 
 namespace MacOSHelper.UI.Widgets;
@@ -18,7 +19,7 @@ public static class ProgressWidget
         ImGui.BeginChild("##progress_widget", new Vector2(width, 110), ImGuiChildFlags.Borders);
 
         ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.85f, 0.85f, 0.85f, 1.0f));
-        ImGui.Text("Baixando:");
+        ImGui.Text(T.DownloadingLabel);
         ImGui.PopStyleColor();
 
         ImGui.SameLine();
@@ -31,7 +32,7 @@ public static class ProgressWidget
         if (!string.IsNullOrEmpty(entry.CurrentFileName))
         {
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.65f, 0.65f, 0.65f, 1.0f));
-            ImGui.TextUnformatted($"Arquivo: {entry.CurrentFileName}");
+            ImGui.TextUnformatted(T.FileLabel(entry.CurrentFileName));
             ImGui.PopStyleColor();
         }
 
@@ -50,7 +51,7 @@ public static class ProgressWidget
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new Vector4(0.22f, 0.75f, 0.28f, 1.0f));
         ImGui.PushStyleColor(ImGuiCol.FrameBg,       new Vector4(0.15f, 0.15f, 0.15f, 1.0f));
 
-        string overallPct = $"Total: {overallProgress * 100f:F1}%%  ({FormatBytes(entry.TotalDownloadedBytes)} / {FormatBytes(entry.TotalBytes)})";
+        string overallPct = $"{T.TotalLabel} {overallProgress * 100f:F1}%%  ({FormatBytes(entry.TotalDownloadedBytes)} / {FormatBytes(entry.TotalBytes)})";
         ImGui.ProgressBar(overallProgress, new Vector2(width - 20, 16), overallPct);
 
         ImGui.PopStyleColor(2);
@@ -61,19 +62,19 @@ public static class ProgressWidget
         {
             double speedMb = entry.SpeedBytesPerSec / (1024.0 * 1024.0);
             ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(0.50f, 0.85f, 1.0f, 1.0f));
-            ImGui.Text($"Velocidade: {speedMb:F2} MB/s");
+            ImGui.Text(T.SpeedLabel(speedMb));
             ImGui.PopStyleColor();
             ImGui.SameLine();
         }
 
         var (statusText, statusColor) = entry.Status switch
         {
-            DownloadStatus.Downloading => ("Baixando...", new Vector4(0.85f, 0.75f, 0.15f, 1.0f)),
-            DownloadStatus.Completed   => ("Concluído",   new Vector4(0.20f, 0.85f, 0.25f, 1.0f)),
-            DownloadStatus.Failed      => ("Erro",        new Vector4(1.0f,  0.30f, 0.30f, 1.0f)),
-            DownloadStatus.Cancelled   => ("Cancelado",   new Vector4(0.65f, 0.65f, 0.65f, 1.0f)),
-            DownloadStatus.Paused      => ("Pausado",     new Vector4(0.80f, 0.70f, 0.20f, 1.0f)),
-            _                          => ("Aguardando",  new Vector4(0.55f, 0.55f, 0.55f, 1.0f))
+            DownloadStatus.Downloading => (T.StatusDownloading, new Vector4(0.85f, 0.75f, 0.15f, 1.0f)),
+            DownloadStatus.Completed   => (T.StatusCompleted,   new Vector4(0.20f, 0.85f, 0.25f, 1.0f)),
+            DownloadStatus.Failed      => (T.StatusFailed,      new Vector4(1.0f,  0.30f, 0.30f, 1.0f)),
+            DownloadStatus.Cancelled   => (T.StatusCancelled,   new Vector4(0.65f, 0.65f, 0.65f, 1.0f)),
+            DownloadStatus.Paused      => (T.StatusPaused,      new Vector4(0.80f, 0.70f, 0.20f, 1.0f)),
+            _                          => (T.StatusWaiting,     new Vector4(0.55f, 0.55f, 0.55f, 1.0f))
         };
 
         ImGui.PushStyleColor(ImGuiCol.Text, statusColor);

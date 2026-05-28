@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.Text;
 using MacOSHelper.Helpers;
 using MacOSHelper.Models;
 
@@ -68,10 +70,26 @@ public class CatalogService
         CancellationToken ct = default)
     {
         var url = CatalogUrlFor(seed);
-        progress?.Report($"Baixando catálogo ({seed})...");
-        var xml = await _http.GetStringAsync(url, ct);
+        progress?.Report(T.DownloadingCatalog(seed.ToString()));
 
-        progress?.Report("Analisando catálogo...");
+        // Apple serve o .sucatalog.gz como bytes gzipped crus (Content-Type: application/octet-stream),
+        // SEM o header Content-Encoding: gzip — entao AutomaticDecompression do HttpClient nao dispara.
+        // Aqui descompactamos manualmente se a URL terminar em .gz.
+        var bytes = await _http.GetByteArrayAsync(url, ct);
+        string xml;
+        if (url.EndsWith(".gz", StringComparison.OrdinalIgnoreCase))
+        {
+            using var ms = new MemoryStream(bytes);
+            using var gz = new GZipStream(ms, CompressionMode.Decompress);
+            using var sr = new StreamReader(gz, Encoding.UTF8);
+            xml = await sr.ReadToEndAsync(ct);
+        }
+        else
+        {
+            xml = Encoding.UTF8.GetString(bytes);
+        }
+
+        progress?.Report(T.ParsingCatalog);
         var all = PlistParser.ParseSucatalog(xml);
 
         var candidates = all
@@ -81,7 +99,7 @@ public class CatalogService
                 pkg.Url.Contains("InstallESD", StringComparison.OrdinalIgnoreCase)))
             .ToList();
 
-        progress?.Report($"Encontrados {candidates.Count} instaladores. Buscando metadados...");
+        progress?.Report(T.FetchingMetaCount(candidates.Count));
 
         var sem = new SemaphoreSlim(8);
         var tasks = candidates.Select(async product =>

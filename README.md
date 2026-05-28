@@ -78,3 +78,8 @@ Grab the latest build from **[Releases](../../releases)** — it's a single `.ex
 - Full bootable USB creation works up to **macOS Catalina (10.15)**. Big Sur and newer (11+) can be downloaded, but USB creation isn't supported for those versions yet. For Apple Silicon Macs, booting from a USB installer isn't supported by Apple itself — use the Mac's built-in Internet Recovery instead.
 - Installers are saved in a `Downloads/` folder next to the `.exe`, so you can reuse them without downloading again.
 
+---
+
+## Built by
+
+**[Revoltz](https://github.com/Revoltz)**

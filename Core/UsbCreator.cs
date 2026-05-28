@@ -18,16 +18,20 @@ public class UsbCreator
         _progress = progress;
     }
 
+    private static string L(string pt, string en) => T.IsEn ? en : pt;
+
     public async Task CreateAsync(DiskInfo disk, string productFolder, CancellationToken ct)
     {
         using var autoPlay = new AutoPlaySuppressor();
 
-        _log($"[INFO] Iniciando criação do pendrive para disco {disk.DiskIndex} ({disk.Model})");
-        _log($"[INFO] Pasta do instalador: {productFolder}");
+        _log(L($"[INFO] Iniciando criação do pendrive para disco {disk.DiskIndex} ({disk.Model})",
+               $"[INFO] Starting USB creation for disk {disk.DiskIndex} ({disk.Model})"));
+        _log(L($"[INFO] Pasta do instalador: {productFolder}",
+               $"[INFO] Installer folder: {productFolder}"));
 
         await Stage1_FormatDisk(disk.DiskIndex, ct);
 
-        _log("[INFO] Aguardando partições...");
+        _log(L("[INFO] Aguardando partições...", "[INFO] Waiting for partitions..."));
         await Task.Delay(3000, ct);
 
         var tmpBase = Path.Combine(Path.GetTempPath(), "macos_helper_extract");
@@ -44,24 +48,32 @@ public class UsbCreator
 
         await Stage4_InstallBootloader(disk.DiskIndex, ct);
 
-        _log("[OK] Pendrive criado com sucesso! Ejete com segurança.");
+        _log(L("[OK] Pendrive criado com sucesso! Ejete com segurança.",
+               "[OK] USB created successfully! Eject safely."));
         _log("");
-        _log("=== Como usar no Mac ===");
-        _log("1) Plugue o pendrive e ligue o Mac segurando a tecla Option (⌥).");
-        _log("2) Selecione o ícone de instalador macOS no menu de boot.");
-        _log("3) Em 'macOS Utilities' clique em 'Reinstalar macOS'.");
+        _log(L("=== Como usar no Mac ===", "=== How to use on the Mac ==="));
+        _log(L("1) Plugue o pendrive e ligue o Mac segurando a tecla Option (⌥).",
+               "1) Plug in the USB and power on the Mac holding the Option (⌥) key."));
+        _log(L("2) Selecione o ícone de instalador macOS no menu de boot.",
+               "2) Pick the macOS installer icon from the boot menu."));
+        _log(L("3) Em 'macOS Utilities' clique em 'Reinstalar macOS'.",
+               "3) From 'macOS Utilities' click 'Reinstall macOS'."));
         _log("");
-        _log("Se aparecer 'O servidor de recuperação não pôde ser contatado':");
-        _log("   abra Utilitários → Terminal e cole este comando (uma linha):");
+        _log(L("Se aparecer 'O servidor de recuperação não pôde ser contatado':",
+               "If you see 'The recovery server could not be contacted':"));
+        _log(L("   abra Utilitários → Terminal e cole este comando (uma linha):",
+               "   open Utilities → Terminal and paste this command (one line):"));
         _log("   nvram IASUCatalogURL=\"http://swscan.apple.com/content/catalogs/" +
              "others/index-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-" +
              "snowleopard-leopard.merged-1.sucatalog\"");
-        _log("   Depois feche o Terminal e clique em 'Reinstalar macOS' de novo.");
+        _log(L("   Depois feche o Terminal e clique em 'Reinstalar macOS' de novo.",
+               "   Then close Terminal and click 'Reinstall macOS' again."));
     }
 
     private async Task Stage1_FormatDisk(int diskIndex, CancellationToken ct)
     {
-        _log($"[INFO] Stage 1: Formatando disco {diskIndex} (Storage Management API)...");
+        _log(L($"[INFO] Stage 1: Formatando disco {diskIndex} (Storage Management API)...",
+               $"[INFO] Stage 1: Formatting disk {diskIndex} (Storage Management API)..."));
 
         await Task.Run(() =>
         {
@@ -75,14 +87,16 @@ public class UsbCreator
                 using var s = new ManagementObjectSearcher(scope,
                     new ObjectQuery($"SELECT * FROM MSFT_Disk WHERE Number = {diskIndex}"));
                 return s.Get().Cast<ManagementObject>().FirstOrDefault()
-                    ?? throw new Exception($"Disco {diskIndex} não encontrado pela Storage Management API.");
+                    ?? throw new Exception(L($"Disco {diskIndex} não encontrado pela Storage Management API.",
+                                              $"Disk {diskIndex} not found via Storage Management API."));
             }
 
             void Check(ManagementBaseObject result, string op)
             {
                 var code = Convert.ToUInt32(result["ReturnValue"]);
                 if (code != 0)
-                    throw new Exception($"Stage 1 — {op} falhou (código {code}).");
+                    throw new Exception(L($"Stage 1 — {op} falhou (código {code}).",
+                                           $"Stage 1 — {op} failed (code {code})."));
             }
 
             using (var d = GetDisk())
@@ -93,7 +107,7 @@ public class UsbCreator
                 try { d.InvokeMethod("SetAttributes", sa, null); } catch { }
             }
 
-            _log("[INFO]   Limpando tabela de partições...");
+            _log(L("[INFO]   Limpando tabela de partições...", "[INFO]   Wiping partition table..."));
             using (var d = GetDisk())
             {
                 var p = d.GetMethodParameters("Clear");
@@ -115,13 +129,14 @@ public class UsbCreator
             }
             Thread.Sleep(500);
 
-            _log("[INFO]   Inicializando como MBR...");
+            _log(L("[INFO]   Inicializando como MBR...", "[INFO]   Initializing as MBR..."));
             using var disk = GetDisk();
             {
                 var currentStyle = Convert.ToUInt16(disk["PartitionStyle"] ?? (ushort)0);
                 if (currentStyle == 1)
                 {
-                    _log("[INFO]   Disco já está em MBR, pulando Initialize.");
+                    _log(L("[INFO]   Disco já está em MBR, pulando Initialize.",
+                           "[INFO]   Disk is already MBR, skipping Initialize."));
                 }
                 else
                 {
@@ -130,13 +145,16 @@ public class UsbCreator
                     var r    = disk.InvokeMethod("Initialize", p, null);
                     var code = Convert.ToUInt32(r["ReturnValue"]);
                     if (code != 0 && code != 41001 && code != 41002 && code != 42002)
-                        throw new Exception($"Stage 1 — Initialize falhou (código {code}).");
+                        throw new Exception(L($"Stage 1 — Initialize falhou (código {code}).",
+                                               $"Stage 1 — Initialize failed (code {code})."));
                     if (code != 0)
-                        _log($"[WARN]   Initialize retornou {code}, continuando.");
+                        _log(L($"[WARN]   Initialize retornou {code}, continuando.",
+                               $"[WARN]   Initialize returned {code}, continuing."));
                 }
             }
 
-            _log("[INFO]   Criando partição 1 (200 MB, ativa)...");
+            _log(L("[INFO]   Criando partição 1 (200 MB, ativa)...",
+                   "[INFO]   Creating partition 1 (200 MB, active)..."));
             var cp1 = disk.GetMethodParameters("CreatePartition");
             cp1["Size"]              = (ulong)(200 * 1024 * 1024);
             cp1["AssignDriveLetter"] = true;
@@ -156,7 +174,8 @@ public class UsbCreator
             if (part1 != null)
             {
                 var letter = Convert.ToChar(part1["DriveLetter"] ?? '\0');
-                _log($"[INFO]   Formatando {(letter != '\0' ? $"{letter}:" : "partição 1")} como FAT32...");
+                _log(L($"[INFO]   Formatando {(letter != '\0' ? $"{letter}:" : "partição 1")} como FAT32...",
+                       $"[INFO]   Formatting {(letter != '\0' ? $"{letter}:" : "partition 1")} as FAT32..."));
 
                 if (letter != '\0')
                 {
@@ -176,7 +195,8 @@ public class UsbCreator
                 }
             }
 
-            _log("[INFO]   Criando partição 2 (sem formatação)...");
+            _log(L("[INFO]   Criando partição 2 (sem formatação)...",
+                   "[INFO]   Creating partition 2 (unformatted)..."));
             var cp2 = disk.GetMethodParameters("CreatePartition");
             cp2["UseMaximumSize"] = true;
             cp2["MbrType"]        = (byte)0x0B;
@@ -197,25 +217,29 @@ public class UsbCreator
                     ms.Position = 0;
                     ms.Write(mbr);
                     ms.Flush();
-                    _log("[INFO]   Partição 2 marcada como Apple Recovery HD (0xAB) no MBR.");
+                    _log(L("[INFO]   Partição 2 marcada como Apple Recovery HD (0xAB) no MBR.",
+                           "[INFO]   Partition 2 marked as Apple Recovery HD (0xAB) in MBR."));
                 }
                 else
                 {
-                    _log($"[WARN]   Patch MBR: não abriu PhysicalDrive (erro {Marshal.GetLastWin32Error()}).");
+                    _log(L($"[WARN]   Patch MBR: não abriu PhysicalDrive (erro {Marshal.GetLastWin32Error()}).",
+                           $"[WARN]   MBR patch: couldn't open PhysicalDrive (error {Marshal.GetLastWin32Error()})."));
                 }
             }
             catch (Exception ex)
             {
-                _log($"[WARN]   Patch MBR falhou: {ex.Message}");
+                _log(L($"[WARN]   Patch MBR falhou: {ex.Message}",
+                       $"[WARN]   MBR patch failed: {ex.Message}"));
             }
 
-            _log("[OK] Stage 1: Disco formatado.");
+            _log(L("[OK] Stage 1: Disco formatado.", "[OK] Stage 1: Disk formatted."));
         }, ct);
     }
 
     private async Task<string> Stage2_ExtractHfs(string productFolder, string tmpBase, CancellationToken ct)
     {
-        _log("[INFO] Stage 2: Localizando imagem de instalador...");
+        _log(L("[INFO] Stage 2: Localizando imagem de instalador...",
+               "[INFO] Stage 2: Locating installer image..."));
         Directory.CreateDirectory(tmpBase);
 
         // Apple só bênçoa o BaseSystem.dmg pra boot direto via EFI.
@@ -239,19 +263,22 @@ public class UsbCreator
         if (baseDmg != null)
         {
             var sizeMb = new FileInfo(baseDmg).Length / (1024.0 * 1024);
-            _log($"[INFO]   BaseSystem.dmg encontrado ({sizeMb:F0} MB) — usando como fonte HFS+.");
+            _log(L($"[INFO]   BaseSystem.dmg encontrado ({sizeMb:F0} MB) — usando como fonte HFS+.",
+                   $"[INFO]   BaseSystem.dmg found ({sizeMb:F0} MB) — using as HFS+ source."));
             return await ExtractFromPkgOrDmgAsync(baseDmg, tmpBase, ct);
         }
 
         // Prioridade 2: BaseSystem.dmg aninhado dentro de pkg (raro, mas pode acontecer)
-        _log("[WARN]   BaseSystem.dmg não encontrado direto, buscando dentro de .pkg...");
+        _log(L("[WARN]   BaseSystem.dmg não encontrado direto, buscando dentro de .pkg...",
+               "[WARN]   BaseSystem.dmg not found directly, searching inside .pkg..."));
         var pkgFiles = Directory.GetFiles(productFolder, "*.pkg", SearchOption.AllDirectories);
         var basePkg  = pkgFiles.FirstOrDefault(f =>
             Path.GetFileName(f).Contains("BaseSystem", StringComparison.OrdinalIgnoreCase));
 
         if (basePkg != null)
         {
-            _log($"[INFO]   Usando {Path.GetFileName(basePkg)}");
+            _log(L($"[INFO]   Usando {Path.GetFileName(basePkg)}",
+                   $"[INFO]   Using {Path.GetFileName(basePkg)}"));
             return await ExtractFromPkgOrDmgAsync(basePkg, tmpBase, ct);
         }
 
@@ -260,10 +287,12 @@ public class UsbCreator
             .FirstOrDefault(f => !Path.GetFileName(f).Equals(
                 "AppleDiagnostics.dmg", StringComparison.OrdinalIgnoreCase));
         if (anyDmg == null)
-            throw new Exception(
-                "Nenhum BaseSystem.dmg utilizável encontrado na pasta do instalador.");
+            throw new Exception(L(
+                "Nenhum BaseSystem.dmg utilizável encontrado na pasta do instalador.",
+                "No usable BaseSystem.dmg found in the installer folder."));
 
-        _log($"[WARN]   Usando arquivo genérico: {Path.GetFileName(anyDmg)}");
+        _log(L($"[WARN]   Usando arquivo genérico: {Path.GetFileName(anyDmg)}",
+               $"[WARN]   Falling back to generic file: {Path.GetFileName(anyDmg)}"));
         return await ExtractFromPkgOrDmgAsync(anyDmg, tmpBase, ct);
     }
 
@@ -277,9 +306,11 @@ public class UsbCreator
         while (await XarExtractor.IsXarAsync(current, ct))
         {
             if (pass > maxPasses)
-                throw new Exception($"XAR aninhado demais (>{maxPasses} níveis).");
+                throw new Exception(L($"XAR aninhado demais (>{maxPasses} níveis).",
+                                       $"XAR nesting too deep (>{maxPasses} levels)."));
 
-            _log($"[INFO]   Pass {pass}: extraindo XAR de '{Path.GetFileName(current)}'");
+            _log(L($"[INFO]   Pass {pass}: extraindo XAR de '{Path.GetFileName(current)}'",
+                   $"[INFO]   Pass {pass}: extracting XAR from '{Path.GetFileName(current)}'"));
             var passDir   = Path.Combine(tmpBase, $"pass{pass}");
             var extracted = await XarExtractor.ExtractFirstAsync(
                 current, passDir,
@@ -290,24 +321,28 @@ public class UsbCreator
                 ct:       ct);
 
             if (extracted == null)
-                throw new Exception($"Pass {pass}: nenhum .dmg/.pkg encontrado dentro do XAR.");
+                throw new Exception(L($"Pass {pass}: nenhum .dmg/.pkg encontrado dentro do XAR.",
+                                       $"Pass {pass}: no .dmg/.pkg found inside XAR."));
 
             current = extracted;
             pass++;
         }
 
         if (!await DmgExtractor.IsDmgAsync(current, ct))
-            throw new Exception(
-                $"Arquivo final '{Path.GetFileName(current)}' não é UDIF DMG válido.");
+            throw new Exception(L(
+                $"Arquivo final '{Path.GetFileName(current)}' não é UDIF DMG válido.",
+                $"Final file '{Path.GetFileName(current)}' is not a valid UDIF DMG."));
 
-        _log($"[INFO]   Extraindo HFS+ de '{Path.GetFileName(current)}' (UDIF)");
+        _log(L($"[INFO]   Extraindo HFS+ de '{Path.GetFileName(current)}' (UDIF)",
+               $"[INFO]   Extracting HFS+ from '{Path.GetFileName(current)}' (UDIF)"));
         var hfsDir = Path.Combine(tmpBase, $"pass{pass}_hfs");
         var hfs    = await DmgExtractor.ExtractHfsAsync(
             current, hfsDir,
             log:      m => _log(m),
             progress: _progress,
             ct:       ct);
-        _log($"[OK] Stage 2: HFS+ extraído ({new FileInfo(hfs).Length / (1024.0 * 1024):F0} MB).");
+        _log(L($"[OK] Stage 2: HFS+ extraído ({new FileInfo(hfs).Length / (1024.0 * 1024):F0} MB).",
+               $"[OK] Stage 2: HFS+ extracted ({new FileInfo(hfs).Length / (1024.0 * 1024):F0} MB)."));
         return hfs;
     }
 
@@ -329,7 +364,8 @@ public class UsbCreator
 
     private async Task Stage3_WriteImage(int diskIndex, string hfsPath, CancellationToken ct)
     {
-        _log("[INFO] Stage 3: Gravando imagem no pendrive...");
+        _log(L("[INFO] Stage 3: Gravando imagem no pendrive...",
+               "[INFO] Stage 3: Writing image to USB..."));
 
         long partOffset = 0;
         long partSize   = 0;
@@ -341,7 +377,8 @@ public class UsbCreator
                 new ObjectQuery($"SELECT * FROM MSFT_Partition " +
                                 $"WHERE DiskNumber = {diskIndex} AND PartitionNumber = 2"));
             var p = s.Get().Cast<ManagementObject>().FirstOrDefault()
-                ?? throw new Exception("Partição 2 não encontrada via WMI.");
+                ?? throw new Exception(L("Partição 2 não encontrada via WMI.",
+                                          "Partition 2 not found via WMI."));
             partOffset = Convert.ToInt64(p["Offset"]);
             partSize   = Convert.ToInt64(p["Size"]);
         }, ct);
@@ -359,8 +396,9 @@ public class UsbCreator
             nint.Zero);
 
         if (handle.IsInvalid)
-            throw new Exception(
-                $"Não foi possível abrir {destPath} (Win32 erro {Marshal.GetLastWin32Error()}).");
+            throw new Exception(L(
+                $"Não foi possível abrir {destPath} (Win32 erro {Marshal.GetLastWin32Error()}).",
+                $"Could not open {destPath} (Win32 error {Marshal.GetLastWin32Error()})."));
 
         using var dest = new FileStream(handle, FileAccess.ReadWrite, BufSize, isAsync: true);
         using var src  = new FileStream(hfsPath, FileMode.Open, FileAccess.Read,
@@ -368,32 +406,35 @@ public class UsbCreator
 
         long total = src.Length;
         if (total > partSize)
-            throw new Exception(
-                $"Imagem ({total / (1024.0*1024):F0} MB) maior que partição 2 " +
-                $"({partSize / (1024.0*1024):F0} MB).");
+            throw new Exception(L(
+                $"Imagem ({total / (1024.0*1024):F0} MB) maior que partição 2 ({partSize / (1024.0*1024):F0} MB).",
+                $"Image ({total / (1024.0*1024):F0} MB) larger than partition 2 ({partSize / (1024.0*1024):F0} MB)."));
 
         dest.Position = partOffset;
-        _log($"[INFO]   Escrevendo {total / (1024.0*1024):F0} MB no offset " +
-             $"{partOffset / (1024.0*1024):F0} MB do PhysicalDrive{diskIndex}");
+        _log(L(
+            $"[INFO]   Escrevendo {total / (1024.0*1024):F0} MB no offset {partOffset / (1024.0*1024):F0} MB do PhysicalDrive{diskIndex}",
+            $"[INFO]   Writing {total / (1024.0*1024):F0} MB at offset {partOffset / (1024.0*1024):F0} MB of PhysicalDrive{diskIndex}"));
 
         long written = 0;
         var  buf     = new byte[BufSize];
 
         int read;
+        string stageLabel = L("Stage 3 — gravando no pendrive", "Stage 3 — writing to USB");
         while ((read = await src.ReadAsync(buf, ct)) > 0)
         {
             await dest.WriteAsync(buf.AsMemory(0, read), ct);
             written += read;
-            _progress(written, total, $"Stage 3 — gravando no pendrive");
+            _progress(written, total, stageLabel);
         }
 
         await dest.FlushAsync(ct);
-        _log("[OK] Stage 3: Imagem gravada.");
+        _log(L("[OK] Stage 3: Imagem gravada.", "[OK] Stage 3: Image written."));
     }
 
     private async Task Stage4_InstallBootloader(int diskIndex, CancellationToken ct)
     {
-        _log("[INFO] Stage 4: Instalando bootloader (nativo)...");
+        _log(L("[INFO] Stage 4: Instalando bootloader (nativo)...",
+               "[INFO] Stage 4: Installing bootloader (native)..."));
 
         long part1Offset = 0;
         string? part1Letter = null;
@@ -405,7 +446,8 @@ public class UsbCreator
                 new ObjectQuery($"SELECT * FROM MSFT_Partition " +
                                 $"WHERE DiskNumber = {diskIndex} AND PartitionNumber = 1"));
             var p = s.Get().Cast<ManagementObject>().FirstOrDefault()
-                ?? throw new Exception("Partição 1 não encontrada via WMI.");
+                ?? throw new Exception(L("Partição 1 não encontrada via WMI.",
+                                          "Partition 1 not found via WMI."));
             part1Offset = Convert.ToInt64(p["Offset"]);
             var letter  = Convert.ToChar(p["DriveLetter"] ?? '\0');
             if (letter != '\0') part1Letter = letter.ToString();
@@ -415,11 +457,13 @@ public class UsbCreator
         {
             var destBoot = Path.Combine(part1Letter + ":\\", "boot");
             await File.WriteAllBytesAsync(destBoot, BootResources.Boot, ct);
-            _log($"[INFO]   'boot' ({BootResources.Boot.Length / 1024} KB) copiado para {part1Letter}:\\");
+            _log(L($"[INFO]   'boot' ({BootResources.Boot.Length / 1024} KB) copiado para {part1Letter}:\\",
+                   $"[INFO]   'boot' ({BootResources.Boot.Length / 1024} KB) copied to {part1Letter}:\\"));
         }
         else
         {
-            _log("[WARN]   Partição 1 sem letra — arquivo boot não copiado.");
+            _log(L("[WARN]   Partição 1 sem letra — arquivo boot não copiado.",
+                   "[WARN]   Partition 1 has no drive letter — boot file not copied."));
         }
 
         await Task.Run(() =>
@@ -429,7 +473,9 @@ public class UsbCreator
                 0xC0000000u, 0x00000003u, nint.Zero, 3u, 0x80000000u, nint.Zero);
 
             if (handle.IsInvalid)
-                throw new Exception($"Stage 4 MBR: erro Win32 {Marshal.GetLastWin32Error()}.");
+                throw new Exception(L(
+                    $"Stage 4 MBR: erro Win32 {Marshal.GetLastWin32Error()}.",
+                    $"Stage 4 MBR: Win32 error {Marshal.GetLastWin32Error()}."));
 
             using var fs = new FileStream(handle, FileAccess.ReadWrite, 512);
             var mbr = new byte[512];
@@ -444,7 +490,8 @@ public class UsbCreator
             fs.Write(mbr);
             fs.Flush();
         }, ct);
-        _log("[INFO]   MBR (boot0, 446 bytes) gravado, partition table preservada.");
+        _log(L("[INFO]   MBR (boot0, 446 bytes) gravado, partition table preservada.",
+               "[INFO]   MBR (boot0, 446 bytes) written, partition table preserved."));
 
         if (part1Letter != null)
         {
@@ -455,12 +502,15 @@ public class UsbCreator
                     0xC0000000u, 0x00000003u, nint.Zero, 3u, 0x80000000u, nint.Zero);
 
                 if (volHandle.IsInvalid)
-                    throw new Exception($"Stage 4 PBR: erro abrindo {volPath} ({Marshal.GetLastWin32Error()}).");
+                    throw new Exception(L(
+                        $"Stage 4 PBR: erro abrindo {volPath} ({Marshal.GetLastWin32Error()}).",
+                        $"Stage 4 PBR: error opening {volPath} ({Marshal.GetLastWin32Error()})."));
 
                 if (!DeviceIoControl(volHandle, FSCTL_LOCK_VOLUME,
                         nint.Zero, 0, nint.Zero, 0, out _, nint.Zero))
                 {
-                    _log($"[WARN]   FSCTL_LOCK_VOLUME falhou ({Marshal.GetLastWin32Error()}), tentando dismount...");
+                    _log(L($"[WARN]   FSCTL_LOCK_VOLUME falhou ({Marshal.GetLastWin32Error()}), tentando dismount...",
+                           $"[WARN]   FSCTL_LOCK_VOLUME failed ({Marshal.GetLastWin32Error()}), trying dismount..."));
                     DeviceIoControl(volHandle, FSCTL_DISMOUNT_VOLUME,
                         nint.Zero, 0, nint.Zero, 0, out _, nint.Zero);
                     DeviceIoControl(volHandle, FSCTL_LOCK_VOLUME,
@@ -481,13 +531,15 @@ public class UsbCreator
                 fs.Write(vbr);
                 fs.Flush();
             }, ct);
-            _log("[INFO]   PBR (boot1f32) gravado via volume com lock.");
+            _log(L("[INFO]   PBR (boot1f32) gravado via volume com lock.",
+                   "[INFO]   PBR (boot1f32) written via locked volume."));
         }
         else
         {
-            _log("[WARN]   Partição 1 sem letra, PBR não gravado.");
+            _log(L("[WARN]   Partição 1 sem letra, PBR não gravado.",
+                   "[WARN]   Partition 1 has no drive letter, PBR not written."));
         }
 
-        _log("[OK] Stage 4: Bootloader instalado.");
+        _log(L("[OK] Stage 4: Bootloader instalado.", "[OK] Stage 4: Bootloader installed."));
     }
 }

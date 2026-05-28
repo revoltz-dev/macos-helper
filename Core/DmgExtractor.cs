@@ -6,6 +6,8 @@ namespace MacOSHelper.Core;
 
 public static class DmgExtractor
 {
+    private static string L(string pt, string en) => T.IsEn ? en : pt;
+
     public static async Task<bool> IsDmgAsync(string path, CancellationToken ct = default)
     {
         if (!File.Exists(path)) return false;
@@ -30,14 +32,15 @@ public static class DmgExtractor
         using var src = new FileStream(dmgPath, FileMode.Open, FileAccess.Read,
             FileShare.Read, 4 * 1024 * 1024, useAsync: true);
 
-        if (src.Length < 512) throw new Exception("DMG: arquivo muito pequeno.");
+        if (src.Length < 512) throw new Exception(L("DMG: arquivo muito pequeno.", "DMG: file too small."));
         src.Position = src.Length - 512;
         var trailer = new byte[512];
         await src.ReadExactlyAsync(trailer, ct);
 
         if (trailer[0] != (byte)'k' || trailer[1] != (byte)'o' ||
             trailer[2] != (byte)'l' || trailer[3] != (byte)'y')
-            throw new Exception("DMG: trailer 'koly' não encontrado — arquivo não é UDIF.");
+            throw new Exception(L("DMG: trailer 'koly' não encontrado — arquivo não é UDIF.",
+                                   "DMG: 'koly' trailer not found — file is not UDIF."));
 
         long xmlOffset = ReadBE64(trailer, 216);
         long xmlLength = ReadBE64(trailer, 224);
@@ -50,10 +53,14 @@ public static class DmgExtractor
         var blkxList = ExtractBlkxEntries(doc);
 
         if (blkxList.Count == 0)
-            throw new Exception("DMG: nenhuma entrada blkx encontrada no plist.");
+            throw new Exception(L("DMG: nenhuma entrada blkx encontrada no plist.",
+                                   "DMG: no blkx entry found in the plist."));
 
-        log?.Invoke($"[INFO] DMG: {blkxList.Count} partição(ões) encontrada(s): " +
-                    string.Join(", ", blkxList.Select(b => $"'{b.Name}'")));
+        log?.Invoke(L(
+            $"[INFO] DMG: {blkxList.Count} partição(ões) encontrada(s): " +
+                string.Join(", ", blkxList.Select(b => $"'{b.Name}'")),
+            $"[INFO] DMG: {blkxList.Count} partition(s) found: " +
+                string.Join(", ", blkxList.Select(b => $"'{b.Name}'"))));
 
         // Tenta encontrar partição HFS/APFS pelo nome
         var hfs = blkxList.FirstOrDefault(b =>
@@ -70,7 +77,9 @@ public static class DmgExtractor
                 !b.Name.Contains("Driver",        StringComparison.OrdinalIgnoreCase) &&
                 !b.Name.Contains("Apple_Boot",    StringComparison.OrdinalIgnoreCase));
             if (hfs.Data != null)
-                log?.Invoke($"[WARN] DMG: nome não contém 'HFS'/'APFS', usando '{hfs.Name}' como fallback.");
+                log?.Invoke(L(
+                    $"[WARN] DMG: nome não contém 'HFS'/'APFS', usando '{hfs.Name}' como fallback.",
+                    $"[WARN] DMG: name does not contain 'HFS'/'APFS', using '{hfs.Name}' as fallback."));
         }
 
         // Fallback 2: maior partição disponível (por contagem de setores)
@@ -81,13 +90,17 @@ public static class DmgExtractor
                 .OrderByDescending(b => ReadBE64(b.Data!, 16))
                 .FirstOrDefault();
             if (hfs.Data != null)
-                log?.Invoke($"[WARN] DMG: usando maior partição como fallback: '{hfs.Name}'.");
+                log?.Invoke(L(
+                    $"[WARN] DMG: usando maior partição como fallback: '{hfs.Name}'.",
+                    $"[WARN] DMG: using largest partition as fallback: '{hfs.Name}'."));
         }
 
         if (hfs.Data == null)
-            throw new Exception("DMG: nenhuma partição utilizável encontrada.");
+            throw new Exception(L("DMG: nenhuma partição utilizável encontrada.",
+                                   "DMG: no usable partition found."));
 
-        log?.Invoke($"[INFO] DMG: extraindo partição '{hfs.Name}'");
+        log?.Invoke(L($"[INFO] DMG: extraindo partição '{hfs.Name}'",
+                       $"[INFO] DMG: extracting partition '{hfs.Name}'"));
 
         long blkxSectorCount = ReadBE64(hfs.Data, 16);
         long totalBytes = blkxSectorCount * 512;
@@ -109,7 +122,8 @@ public static class DmgExtractor
         if (blkx.Length < 204 ||
             blkx[0] != (byte)'m' || blkx[1] != (byte)'i' ||
             blkx[2] != (byte)'s' || blkx[3] != (byte)'h')
-            throw new Exception("DMG: BLKX inválido (assinatura 'mish' ausente).");
+            throw new Exception(L("DMG: BLKX inválido (assinatura 'mish' ausente).",
+                                   "DMG: invalid BLKX ('mish' signature missing)."));
 
         long blkxDataOffset = ReadBE64(blkx, 24);
         uint blockCount     = ReadBE32(blkx, 200);
@@ -157,15 +171,20 @@ public static class DmgExtractor
                     break;
 
                 case 0x80000004u:
-                    throw new Exception("DMG: compressão ADC (UDCO) não suportada.");
+                    throw new Exception(L("DMG: compressão ADC (UDCO) não suportada.",
+                                           "DMG: ADC (UDCO) compression not supported."));
                 case 0x80000006u:
-                    throw new Exception("DMG: compressão bzip2 (UDBZ) não suportada.");
+                    throw new Exception(L("DMG: compressão bzip2 (UDBZ) não suportada.",
+                                           "DMG: bzip2 (UDBZ) compression not supported."));
                 case 0x80000007u:
-                    throw new Exception("DMG: compressão LZFSE (ULFO) não suportada.");
+                    throw new Exception(L("DMG: compressão LZFSE (ULFO) não suportada.",
+                                           "DMG: LZFSE (ULFO) compression not supported."));
                 case 0x80000008u:
-                    throw new Exception("DMG: compressão LZMA (ULMA) não suportada.");
+                    throw new Exception(L("DMG: compressão LZMA (ULMA) não suportada.",
+                                           "DMG: LZMA (ULMA) compression not supported."));
                 default:
-                    throw new Exception($"DMG: tipo de chunk 0x{entryType:X8} desconhecido.");
+                    throw new Exception(L($"DMG: tipo de chunk 0x{entryType:X8} desconhecido.",
+                                           $"DMG: unknown chunk type 0x{entryType:X8}."));
             }
 
             currentPos    = expectedPos + outSize;
@@ -233,7 +252,7 @@ public static class DmgExtractor
         {
             int toRead = (int)Math.Min(buf.Length, remaining);
             int n = await src.ReadAsync(buf.AsMemory(0, toRead), ct);
-            if (n == 0) throw new Exception("DMG: EOF inesperado durante leitura.");
+            if (n == 0) throw new Exception(L("DMG: EOF inesperado durante leitura.", "DMG: unexpected EOF during read."));
             await dest.WriteAsync(buf.AsMemory(0, n), ct);
             remaining -= n;
         }

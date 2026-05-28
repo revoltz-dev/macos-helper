@@ -109,18 +109,18 @@ public sealed class AppWindow : GameWindow
             var minDelay = Task.Delay(3000);
             try
             {
-                _app.LoadingStatus = "Carregando recursos...";
+                _app.LoadingStatus = T.LoadingRes;
                 _app.LoadingProgress = 0.3f;
                 _ = MacOSHelper.Core.BootResources.Boot.Length;
                 _app.LoadingProgress = 0.6f;
                 _ = MacOSHelper.Core.BootResources.Boot0.Length;
                 _ = MacOSHelper.Core.BootResources.Boot1f32.Length;
                 _app.LoadingProgress = 1.0f;
-                _app.LoadingStatus = "Pronto.";
+                _app.LoadingStatus = T.ReadyDone;
             }
             catch (Exception ex)
             {
-                _app.LoadingStatus = $"Erro: {ex.Message}";
+                _app.LoadingStatus = T.ErrorFmt(ex.Message);
             }
             await minDelay;
             _app.IsLoading = false;
@@ -218,7 +218,7 @@ public sealed class AppWindow : GameWindow
         ImGui.SetCursorPosY(footerY);
         ImGui.Separator();
         ImGui.Spacing();
-        const string pre = "desenvolvido por ";
+        string pre = T.DevelopedBy;
         float totalFW = ImGui.CalcTextSize(pre).X + ImGui.CalcTextSize("Revoltz").X;
         ImGui.SetCursorPosX((winW - totalFW) * 0.5f);
         ImGui.PushStyleColor(ImGuiCol.Text, new NVec4(0.35f, 0.35f, 0.35f, 1f));
@@ -252,7 +252,7 @@ public sealed class AppWindow : GameWindow
         ImGui.SameLine();
         float rightEdge = ImGui.GetContentRegionAvail().X + ImGui.GetCursorPosX();
 
-        string catLabel = "Catálogo";
+        string catLabel = T.Catalog;
         float  catW     = ImGui.CalcTextSize(catLabel).X + 18;
         ImGui.SetCursorPosX(rightEdge - catW);
         ImGui.PushStyleColor(ImGuiCol.Button,        new NVec4(0.16f, 0.38f, 0.16f, 1f));
@@ -262,7 +262,7 @@ public sealed class AppWindow : GameWindow
         { _app.ShowCatalog = true; ImGui.OpenPopup("##catalog"); }
         ImGui.PopStyleColor(3);
 
-        string detLabel = "Detectar Mac";
+        string detLabel = T.DetectMac;
         float  detW     = ImGui.CalcTextSize(detLabel).X + 18;
         ImGui.SameLine();
         ImGui.SetCursorPosX(rightEdge - catW - detW - 6);
@@ -272,6 +272,19 @@ public sealed class AppWindow : GameWindow
         if (ImGui.Button(detLabel))
         { _app.ShowDetect = true; ImGui.OpenPopup("##detect"); }
         ImGui.PopStyleColor(3);
+
+        // Dropdown de idioma — entre o titulo e os botoes
+        const float langW = 56f;
+        ImGui.SameLine();
+        ImGui.SetCursorPosX(rightEdge - catW - detW - 6 - langW - 6);
+        ImGui.SetNextItemWidth(langW);
+        var langs = new[] { "PT", "EN" };
+        int langIdx = T.Current == Lang.En ? 1 : 0;
+        ImGui.PushStyleColor(ImGuiCol.FrameBg,        new NVec4(0.18f, 0.18f, 0.22f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.FrameBgHovered, new NVec4(0.26f, 0.26f, 0.32f, 1f));
+        if (ImGui.Combo("##lang", ref langIdx, langs, langs.Length))
+            _app.SetLanguage(langIdx == 1 ? Lang.En : Lang.Pt);
+        ImGui.PopStyleColor(2);
 
         ImGui.Separator();
         ImGui.Spacing();
@@ -286,7 +299,7 @@ public sealed class AppWindow : GameWindow
         ImGui.Separator();
         ImGui.Spacing();
 
-        const string fPrefix = "desenvolvido por ";
+        string fPrefix = T.DevelopedBy;
         float fPrefixW = ImGui.CalcTextSize(fPrefix).X;
         float fNameW   = ImGui.CalcTextSize("Revoltz").X;
         ImGui.SetCursorPosX((ImGui.GetWindowWidth() - fPrefixW - fNameW) * 0.5f);
